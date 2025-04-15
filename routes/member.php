@@ -14,14 +14,13 @@ Route::prefix('member')->name('member.')->group(function () {
         Route::get('register', [RegisteredUserController::class, 'create'])
             ->name('register');
         Route::post('register', [RegisteredUserController::class, 'store']);
-
         Route::get('login', [AuthenticatedSessionController::class, 'create'])
             ->name('login');
         Route::post('login', [AuthenticatedSessionController::class, 'store']);
     });
 
     // Protected routes
-    Route::middleware('auth:member')->group(function () {
+    Route::middleware(['auth:member', 'prevent-back-history'])->group(function () {
         // Dashboard
         Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
         
