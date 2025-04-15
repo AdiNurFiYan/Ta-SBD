@@ -19,6 +19,7 @@ return new class extends Migration
             $table->date('booking_date');
             $table->enum('status', ['pending', 'confirmed', 'completed', 'cancelled'])->default('pending');
             $table->text('notes')->nullable();
+            $table->foreignId('admin_id')->nullable()->constrained('admins')->onDelete('set null'); // Add admin_id to store the admin's ID
             $table->softDeletes();
             $table->timestamps();
         });

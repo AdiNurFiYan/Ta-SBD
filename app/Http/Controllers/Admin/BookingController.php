@@ -1,22 +1,19 @@
 <?php
-
 namespace App\Http\Controllers\Admin;
-
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use Illuminate\Http\Request;
-
 class BookingController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Booking::with(['member', 'package', 'slot']);
+        $query = Booking::with(['member', 'package', 'slot', 'admin']);
         
         // Search by member name
         if ($request->has('search')) {
             $query->whereHas('member', function ($q) use ($request) {
                 $q->where('name', 'like', '%' . $request->search . '%')
-                  ->orWhere('email', 'like', '%' . $request->search . '%');
+                ->orWhere('email', 'like', '%' . $request->search . '%');
             });
         }
         
@@ -37,7 +34,10 @@ class BookingController extends Controller
     
     public function confirm(Booking $booking)
     {
-        $booking->update(['status' => 'confirmed']);
+        $booking->update([
+            'status' => 'confirmed', 
+            'admin_id' => auth()->guard('admin')->id()
+        ]);
         
         return redirect()->route('admin.bookings.index')
             ->with('success', 'Booking confirmed successfully.');
@@ -45,7 +45,10 @@ class BookingController extends Controller
     
     public function complete(Booking $booking)
     {
-        $booking->update(['status' => 'completed']);
+        $booking->update([
+            'status' => 'completed',
+            'admin_id' => auth()->guard('admin')->id()
+        ]);
         
         // Make the slot available again if it's a completed booking
         $booking->slot->update(['status' => 'available']);
@@ -56,7 +59,10 @@ class BookingController extends Controller
     
     public function cancel(Booking $booking)
     {
-        $booking->update(['status' => 'cancelled']);
+        $booking->update([
+            'status' => 'cancelled',
+            'admin_id' => auth()->guard('admin')->id()
+        ]);
         
         // Make the slot available again
         $booking->slot->update(['status' => 'available']);
@@ -74,42 +80,43 @@ class BookingController extends Controller
             ->with('success', 'Booking removed from active list.');
     }
     
-// Show booking history (including soft deleted)
-public function history(Request $request)
-{
-    $query = Booking::with(['member', 'package', 'slot'])
-        ->withTrashed();
-    
-    // Search by member name
-    if ($request->has('search')) {
-        $query->whereHas('member', function ($q) use ($request) {
-            $q->where('name', 'like', '%' . $request->search . '%')
-              ->orWhere('email', 'like', '%' . $request->search . '%');
-        });
+    // Show booking history (including soft deleted)
+    public function history(Request $request)
+    {
+        $query = Booking::with(['member', 'package', 'slot', 'admin'])
+            ->withTrashed();
+        
+        // Search by member name
+        if ($request->has('search')) {
+            $query->whereHas('member', function ($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->search . '%')
+                ->orWhere('email', 'like', '%' . $request->search . '%');
+            });
+        }
+        
+        $bookings = $query->latest()->paginate(10);
+        
+        return view('admin.bookings.history', compact('bookings'));
     }
     
-    $bookings = $query->latest()->paginate(10);
+    // Hard delete
+    public function forceDelete($id)
+    {
+        $booking = Booking::withTrashed()->findOrFail($id);
+        $booking->forceDelete();
+        
+        return redirect()->route('admin.bookings.history')
+            ->with('success', 'Booking permanently deleted.');
+    }
     
-    return view('admin.bookings.history', compact('bookings'));
+    // Restore soft deleted booking
+    public function restore($id)
+    {
+        $booking = Booking::withTrashed()->findOrFail($id);
+        $booking->restore();
+        
+        return redirect()->route('admin.bookings.history')
+            ->with('success', 'Booking restored successfully.');
+    }
 }
 
-// Hard delete
-public function forceDelete($id)
-{
-    $booking = Booking::withTrashed()->findOrFail($id);
-    $booking->forceDelete();
-    
-    return redirect()->route('admin.bookings.history')
-        ->with('success', 'Booking permanently deleted.');
-}
-
-// Restore soft deleted booking
-public function restore($id)
-{
-    $booking = Booking::withTrashed()->findOrFail($id);
-    $booking->restore();
-    
-    return redirect()->route('admin.bookings.history')
-        ->with('success', 'Booking restored successfully.');
-}
-}

@@ -11,12 +11,7 @@ class Booking extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'member_id',
-        'package_id',
-        'slot_id',
-        'booking_date',
-        'status',
-        'notes',
+        'member_id', 'package_id', 'slot_id', 'booking_date', 'status', 'notes', 'admin_id'
     ];
 
     protected $casts = [
@@ -38,7 +33,12 @@ class Booking extends Model
     {
         return $this->belongsTo(Slot::class, 'slot_id');
     }
-        
+
+    public function admin()
+    {
+        return $this->belongsTo(Admin::class, 'admin_id');
+    }
+
     // Scopes
     public function scopePending($query)
     {
