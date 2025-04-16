@@ -10,9 +10,10 @@
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6">
                     <h3 class="text-lg font-semibold text-gray-900 mb-6">Booking History</h3>
-                    
+
+                    {{-- Success message --}}
                     @if(session('success'))
-                        <div class="bg-green-50 border-l-4 border-green-400 p-4 mb-6">
+                        <div class="bg-green-50 border-l-4 border-green-400 p-4 mb-6 rounded">
                             <div class="flex">
                                 <div class="flex-shrink-0">
                                     <svg class="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
@@ -25,9 +26,10 @@
                             </div>
                         </div>
                     @endif
-                    
+
+                    {{-- Error message --}}
                     @if(session('error'))
-                        <div class="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
+                        <div class="bg-red-50 border-l-4 border-red-400 p-4 mb-6 rounded">
                             <div class="flex">
                                 <div class="flex-shrink-0">
                                     <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
@@ -40,71 +42,85 @@
                             </div>
                         </div>
                     @endif
-                    
+
+                    {{-- Booking table --}}
                     @if($bookings->count() > 0)
                         <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
+                            <table class="min-w-full divide-y divide-gray-200 text-sm">
+                                <thead class="bg-indigo-50 text-gray-700 text-left uppercase text-xs tracking-wider">
                                     <tr>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Booking ID</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Package</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Booked On</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                        <th class="px-6 py-3">Booking ID</th>
+                                        <th class="px-6 py-3">Package</th>
+                                        <th class="px-6 py-3">Date & Time</th>
+                                        <th class="px-6 py-3">Status</th>
+                                        <th class="px-6 py-3">Booked On</th>
+                                        <th class="px-6 py-3">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
+                                <tbody class="bg-white divide-y divide-gray-100">
                                     @foreach($bookings as $booking)
-                                        <tr>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                #{{ $booking->id }}
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {{ $booking->package->name }}
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {{ \Carbon\Carbon::parse($booking->slot->date)->format('d M Y') }}, 
-                                                {{ \Carbon\Carbon::parse($booking->slot->start_time)->format('H:i') }} - 
+                                        <tr class="hover:bg-gray-50 transition">
+                                            <td class="px-6 py-4 font-bold text-indigo-700">#{{ $booking->id }}</td>
+                                            <td class="px-6 py-4 text-gray-800">{{ $booking->package->name }}</td>
+                                            <td class="px-6 py-4 text-gray-600">
+                                                {{ \Carbon\Carbon::parse($booking->slot->date)->format('d M Y') }},
+                                                {{ \Carbon\Carbon::parse($booking->slot->start_time)->format('H:i') }} -
                                                 {{ \Carbon\Carbon::parse($booking->slot->end_time)->format('H:i') }}
                                             </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                            <td class="px-6 py-4">
+                                                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold
                                                     {{ $booking->status === 'pending' ? 'bg-yellow-100 text-yellow-800' : '' }}
                                                     {{ $booking->status === 'confirmed' ? 'bg-green-100 text-green-800' : '' }}
                                                     {{ $booking->status === 'completed' ? 'bg-blue-100 text-blue-800' : '' }}
                                                     {{ $booking->status === 'cancelled' ? 'bg-red-100 text-red-800' : '' }}">
+                                                    @if($booking->status === 'pending')
+                                                        ⏳
+                                                    @elseif($booking->status === 'confirmed')
+                                                        ✅
+                                                    @elseif($booking->status === 'completed')
+                                                        🏁
+                                                    @elseif($booking->status === 'cancelled')
+                                                        ❌
+                                                    @endif
                                                     {{ ucfirst($booking->status) }}
                                                 </span>
                                             </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {{ $booking->created_at->format('d M Y, H:i') }}
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                <a href="{{ route('member.bookings.show', $booking) }}" class="text-blue-600 hover:text-blue-900 mr-3">View</a>
-                                                
-                                                @if(in_array($booking->status, ['pending', 'confirmed']))
-                                                    <form method="POST" action="{{ route('member.bookings.cancel', $booking) }}" class="inline">
-                                                        @csrf
-                                                        @method('PATCH')
-                                                        <button type="submit" class="text-red-600 hover:text-red-900" onclick="return confirm('Are you sure you want to cancel this booking?')">Cancel</button>
-                                                    </form>
-                                                @endif
+                                            <td class="px-6 py-4 text-gray-600">{{ $booking->created_at->format('d M Y, H:i') }}</td>
+                                            <td class="px-6 py-4">
+                                                <div class="flex items-center gap-2">
+                                                    <a href="{{ route('member.bookings.show', $booking) }}"
+                                                       class="inline-block px-3 py-1 text-xs font-medium text-white bg-blue-500 rounded hover:bg-blue-600">
+                                                        View
+                                                    </a>
+                                                    @if(in_array($booking->status, ['pending', 'confirmed']))
+                                                        <form method="POST" action="{{ route('member.bookings.cancel', $booking) }}">
+                                                            @csrf
+                                                            @method('PATCH')
+                                                            <button type="submit"
+                                                                    onclick="return confirm('Are you sure you want to cancel this booking?')"
+                                                                    class="inline-block px-3 py-1 text-xs font-medium text-white bg-red-500 rounded hover:bg-red-600">
+                                                                Cancel
+                                                            </button>
+                                                        </form>
+                                                    @endif
+                                                </div>
                                             </td>
                                         </tr>
                                     @endforeach
                                 </tbody>
                             </table>
                         </div>
-                        
+
                         <div class="mt-6">
                             {{ $bookings->links() }}
                         </div>
                     @else
-                        <div class="text-center py-8 text-gray-500">
-                            You don't have any bookings yet.
+                        <div class="text-center py-12 text-gray-500">
+                            <p class="text-lg">You don't have any bookings yet.</p>
                             <div class="mt-4">
-                                <a href="{{ route('member.packages.index') }}" class="text-indigo-600 hover:text-indigo-900">Browse packages</a>
+                                <a href="{{ route('member.packages.index') }}" class="inline-block px-4 py-2 text-white bg-indigo-600 rounded hover:bg-indigo-700 text-sm font-medium">
+                                    Browse Packages
+                                </a>
                             </div>
                         </div>
                     @endif
